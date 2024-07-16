@@ -1,15 +1,30 @@
+import { createClient } from "@supabase/supabase-js";
 import {
   ActionRowBuilder,
   ActivityType,
+  ButtonBuilder,
   ButtonStyle,
   Client,
   ComponentType,
+  EmbedBuilder,
   Events,
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
 } from "discord.js";
 import "dotenv/config";
+import { Tables } from "../supabase";
+
+console.log("Starting the bot...");
+
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+if (!supabaseUrl || !supabaseKey) {
+  console.error("SUPABASE_URL or SUPABASE_KEY is not defined.");
+  throw new Error("SUPABASE_URL or SUPABASE_KEY is not defined.");
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey, {});
 
 const client = new Client({
   intents: ["Guilds", "GuildMessages", "MessageContent"],
@@ -30,89 +45,114 @@ client.on("ready", () => {
 
 client.login(process.env.BOT_TOKEN);
 
+const commands = [
+  {
+    name: "komutlar",
+    description: "Botun kullanabileceğiniz komutları",
+  },
+  {
+    name: "ping",
+    description: "Botun çalışıp çalışmadığını kontrol etmek için kullanılır.",
+  },
+  {
+    name: "users",
+    description: "Sunucudaki kullanıcıları listeler.",
+  },
+  {
+    name: "icerikler",
+    description: "Sunucudaki içerikleri listeler.",
+  },
+  {
+    name: "ekle",
+    description: "Yeni içerik eklemek için kullanılır.",
+  },
+];
 client.on(Events.MessageCreate, async (message) => {
+  if (message.content === "!komutlar") {
+    const embed = new EmbedBuilder()
+      .setTitle("Komutlar")
+      .setDescription("Botun kullanabileceğiniz komutları")
+      .setColor("DarkBlue")
+      .setTimestamp()
+      .setFooter({
+        text: "CodeNest Discord Bot",
+      })
+      .addFields(
+        commands.map((command) => ({
+          name: command.name,
+          value: command.description,
+        }))
+      );
+    await message.reply({ embeds: [embed] });
+  }
+
+  if (message.content === "!ping") {
+    await message.reply("Pong!");
+  }
+  if (message.content === "!users") {
+    let { data, error } = await supabase.from("profiles").select("full_name");
+    if (error) {
+      console.error(error);
+      return;
+    }
+    data = data as Tables<"profiles">[];
+    const userListEmbed = new EmbedBuilder()
+      .setTitle("Toplam Kullanıcı Sayısı: " + data?.length)
+      .setDescription(data?.map((user) => user.full_name).join("\n"))
+      .setColor("DarkBlue")
+      .setTimestamp()
+      .setFooter({
+        text: "CodeNest Discord Bot",
+      });
+    await message.reply({ embeds: [userListEmbed] });
+  }
+
+  if (message.content === "!icerikler") {
+    let { data, error } = await supabase
+      .from("files")
+      .select("title, created_at, description, content_id")
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.error(error);
+      return;
+    }
+    data = data as Tables<"files">[];
+    const contentListEmbed = new EmbedBuilder()
+      .setTitle("Toplam İçerik Sayısı: " + data?.length)
+      .setColor("DarkBlue")
+      .setTimestamp()
+      .setFooter({
+        text: "CodeNest Discord Bot",
+      })
+      .setURL(`https://code-nest-web.vercel.app/explore`)
+      .addFields(
+        data?.slice(0, 10).map((content) => ({
+          name: content.title,
+          value: content.description,
+        }))
+      );
+    await message.reply({ embeds: [contentListEmbed] });
+  }
+
   if (message.content === "!ekle") {
     // Show the modal to the user
     await message.reply({
-      content: "Paylaşım ekleme ekranını açmak için butona tıklayın.",
+      content:
+        "Bot üzerinden paylaşım şu an desteklenmemektedir. Lütfen web sitemizi ziyaret edin.",
       components: [
         {
           type: ComponentType.ActionRow,
           components: [
             {
               type: ComponentType.Button,
-              style: ButtonStyle.Primary,
-              label: "Diyalog Aç",
-              customId: "sendContent",
+              style: ButtonStyle.Link,
+              emoji: "🌐",
+              label: "Ziyaret Et",
+              url: "https://code-nest-web.vercel.app/new", // Replace with your actual URL
             },
           ],
         },
       ],
-    });
-  }
-});
-
-client.on(Events.InteractionCreate, async (interaction) => {
-  // Ensure this is a button interaction
-  if (!interaction.isButton()) return;
-
-  // Check which button was clicked based on customId
-  if (interaction.customId === "sendContent") {
-    // Create the modal
-    const modal = new ModalBuilder()
-      .setCustomId("addContentModal")
-      .setTitle("Paylaşım Ekle");
-
-    // Create the title input
-    const titleInput = new TextInputBuilder()
-      .setCustomId("titleInput")
-      .setPlaceholder("Başlık")
-      .setLabel("Başlık")
-      .setRequired(true)
-      .setStyle(TextInputStyle.Short);
-
-    // Create the description input
-    const descriptionInput = new TextInputBuilder()
-      .setCustomId("descriptionInput")
-      .setPlaceholder("Açıklama")
-      .setLabel("Açıklama")
-      .setStyle(TextInputStyle.Short);
-
-    const codeInput = new TextInputBuilder()
-      .setCustomId("codeInput")
-      .setPlaceholder("Kod")
-      .setLabel("Kod")
-      .setStyle(TextInputStyle.Paragraph);
-
-    // Create action rows for the inputs
-    const titleActionRow =
-      new ActionRowBuilder<TextInputBuilder>().addComponents(titleInput);
-    const descriptionActionRow =
-      new ActionRowBuilder<TextInputBuilder>().addComponents(descriptionInput);
-
-    const codeActionRow =
-      new ActionRowBuilder<TextInputBuilder>().addComponents(codeInput);
-
-    // Add the action rows to the modal
-    modal.addComponents(titleActionRow, descriptionActionRow, codeActionRow);
-
-    await interaction.showModal(modal);
-  }
-});
-
-client.on(Events.InteractionCreate, async (interaction) => {
-  if (!interaction.isModalSubmit()) return;
-  if (interaction.customId === "addContentModal") {
-    const title = interaction.fields.getTextInputValue("titleInput");
-    const description =
-      interaction.fields.getTextInputValue("descriptionInput");
-    console.log({ title, description });
-    const data = {
-      title: title,
-      description: description,
-    };
-    await interaction.reply({
-      content: `İçerik paylaşıldı! ${data.title}`,
     });
   }
 });
