@@ -1,17 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import {
-  ActionRowBuilder,
-  ActivityType,
-  ButtonBuilder,
-  ButtonStyle,
-  Client,
-  ComponentType,
-  EmbedBuilder,
-  Events,
-  ModalBuilder,
-  TextInputBuilder,
-  TextInputStyle,
-} from "discord.js";
+import { ActivityType, Client, EmbedBuilder, Events } from "discord.js";
 import "dotenv/config";
 import { Tables } from "../supabase";
 
@@ -47,7 +35,7 @@ client.login(process.env.BOT_TOKEN);
 
 const commands = [
   {
-    name: "komutlar",
+    name: "komutlar / commands",
     description: "Botun kullanabileceğiniz komutları",
   },
   {
@@ -55,20 +43,20 @@ const commands = [
     description: "Botun çalışıp çalışmadığını kontrol etmek için kullanılır.",
   },
   {
-    name: "users",
+    name: "kullanicilar / users",
     description: "Sunucudaki kullanıcıları listeler.",
   },
   {
-    name: "icerikler",
+    name: "icerikler / contents",
     description: "Sunucudaki içerikleri listeler.",
   },
   {
-    name: "ekle",
+    name: "ekle / add",
     description: "Yeni içerik eklemek için kullanılır.",
   },
 ];
 client.on(Events.MessageCreate, async (message) => {
-  if (message.content === "!komutlar") {
+  if (message.content === "!komutlar" || message.content === "!commands") {
     const embed = new EmbedBuilder()
       .setTitle("Komutlar")
       .setDescription("Botun kullanabileceğiniz komutları")
@@ -89,7 +77,10 @@ client.on(Events.MessageCreate, async (message) => {
   if (message.content === "!ping") {
     await message.reply("Pong!");
   }
-  if (message.content === "!users") {
+  if (message.content === "!pong") {
+    await message.reply("Ping!");
+  }
+  if (message.content === "!kullanicilar" || message.content === "!users") {
     let { data, error } = await supabase.from("profiles").select("full_name");
     if (error) {
       console.error(error);
@@ -107,7 +98,7 @@ client.on(Events.MessageCreate, async (message) => {
     await message.reply({ embeds: [userListEmbed] });
   }
 
-  if (message.content === "!icerikler") {
+  if (message.content === "!icerikler" || message.content === "!contents") {
     let { data, error } = await supabase
       .from("files")
       .select("title, created_at, description, content_id")
@@ -134,25 +125,25 @@ client.on(Events.MessageCreate, async (message) => {
     await message.reply({ embeds: [contentListEmbed] });
   }
 
-  if (message.content === "!ekle") {
-    // Show the modal to the user
-    await message.reply({
-      content:
-        "Bot üzerinden paylaşım şu an desteklenmemektedir. Lütfen web sitemizi ziyaret edin.",
-      components: [
-        {
-          type: ComponentType.ActionRow,
-          components: [
-            {
-              type: ComponentType.Button,
-              style: ButtonStyle.Link,
-              emoji: "🌐",
-              label: "Ziyaret Et",
-              url: "https://code-nest-web.vercel.app/new", // Replace with your actual URL
-            },
-          ],
-        },
-      ],
-    });
+  if (message.content === "!ekle" || message.content === "!add") {
+    const addEmbed = new EmbedBuilder()
+      .setTitle("İçerik Ekleme")
+      .setDescription(
+        "Bot üzerinden paylaşım şu an desteklenmemektedir. Lütfen web sitemizi ziyaret edin."
+      )
+      .setColor("DarkBlue")
+      .setTimestamp()
+      .setFooter({
+        text: "CodeNest Discord Bot",
+      })
+      .setURL("https://code-nest-web.vercel.app/new")
+      .setImage("https://code-nest-web.vercel.app/images/default_avatar.png")
+      .setAuthor({
+        name: "CodeNest",
+        iconURL: "https://code-nest-web.vercel.app/icons/favicon.ico",
+        url: "https://code-nest-web.vercel.app",
+      });
+
+    await message.reply({ embeds: [addEmbed] });
   }
 });
