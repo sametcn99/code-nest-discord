@@ -32,6 +32,32 @@ client.login(process.env.BOT_TOKEN);
 
 client.on(Events.MessageCreate, async (message) => {
   if (message.content === "!ekle") {
+    // Show the modal to the user
+    await message.reply({
+      content: "Paylaşım ekleme ekranını açmak için butona tıklayın.",
+      components: [
+        {
+          type: ComponentType.ActionRow,
+          components: [
+            {
+              type: ComponentType.Button,
+              style: ButtonStyle.Primary,
+              label: "Diyalog Aç",
+              customId: "sendContent",
+            },
+          ],
+        },
+      ],
+    });
+  }
+});
+
+client.on(Events.InteractionCreate, async (interaction) => {
+  // Ensure this is a button interaction
+  if (!interaction.isButton()) return;
+
+  // Check which button was clicked based on customId
+  if (interaction.customId === "sendContent") {
     // Create the modal
     const modal = new ModalBuilder()
       .setCustomId("addContentModal")
@@ -64,59 +90,11 @@ client.on(Events.MessageCreate, async (message) => {
     const descriptionActionRow =
       new ActionRowBuilder<TextInputBuilder>().addComponents(descriptionInput);
 
+    const codeActionRow =
+      new ActionRowBuilder<TextInputBuilder>().addComponents(codeInput);
+
     // Add the action rows to the modal
-    modal.addComponents(titleActionRow, descriptionActionRow);
-
-    // Show the modal to the user
-    await message.reply({
-      content: "Paylaşım ekleme ekranını açmak için butona tıklayın.",
-      components: [
-        {
-          type: ComponentType.ActionRow,
-          components: [
-            {
-              type: ComponentType.Button,
-              style: ButtonStyle.Primary,
-              label: "Diyalog Aç",
-              customId: "sendContent",
-            },
-          ],
-        },
-      ],
-    });
-  }
-});
-
-client.on(Events.InteractionCreate, async (interaction) => {
-  // Ensure this is a button interaction
-  if (!interaction.isButton()) return;
-
-  // Check which button was clicked based on customId
-  if (interaction.customId === "sendContent") {
-    const modal = new ModalBuilder()
-      .setCustomId("addContentModal")
-      .setTitle("Paylaşım Ekle");
-
-    const titleInput = new TextInputBuilder()
-      .setCustomId("titleInput")
-      .setPlaceholder("Başlık")
-      .setLabel("Başlık")
-      .setRequired(true)
-      .setStyle(TextInputStyle.Short);
-
-    const descriptionInput = new TextInputBuilder()
-      .setCustomId("descriptionInput")
-      .setPlaceholder("Açıklama")
-      .setLabel("Açıklama")
-      .setRequired(true)
-      .setStyle(TextInputStyle.Paragraph);
-
-    const titleActionRow =
-      new ActionRowBuilder<TextInputBuilder>().addComponents(titleInput);
-    const descriptionActionRow =
-      new ActionRowBuilder<TextInputBuilder>().addComponents(descriptionInput);
-
-    modal.addComponents(titleActionRow, descriptionActionRow);
+    modal.addComponents(titleActionRow, descriptionActionRow, codeActionRow);
 
     await interaction.showModal(modal);
   }
